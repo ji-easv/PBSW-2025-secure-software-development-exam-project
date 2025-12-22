@@ -14,7 +14,6 @@ on:
 jobs:
   publish-docker-image:
     runs-on: ubuntu-latest
-    needs: build-test
     permissions:
       packages: write
       contents: write
@@ -57,3 +56,13 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+          
+#      - name: Sign the published Docker image
+#          if: ${{ github.event_name != 'pull_request' }}
+#          env:
+#            # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+#            TAGS: ${{ steps.meta.outputs.tags }}
+#            DIGEST: ${{ steps.build-and-push.outputs.digest }}
+#          # This step uses the identity token to provision an ephemeral certificate
+#          # against the sigstore community Fulcio instance.
+#          run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
