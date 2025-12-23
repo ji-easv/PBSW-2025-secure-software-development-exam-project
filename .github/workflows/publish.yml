@@ -86,7 +86,7 @@ jobs:
 
       - name: Generate SBOM
         run: |
-          cdxgen -r -t ts,dotnet -o sbom.json .
+          cdxgen -r -o sbom.json .
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v6
