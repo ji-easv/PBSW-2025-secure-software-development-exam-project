@@ -52,6 +52,7 @@ jobs:
         # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
       - name: Snyk Open Source monitor
         run: snyk monitor --all-projects
+        working-directory: SSD-Exam-Project
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
