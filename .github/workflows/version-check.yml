@@ -1,0 +1,68 @@
+name: Version Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Get version from PR branch
+        id: pr_version
+        run: |
+          if [ ! -f version.txt ]; then
+            echo "❌ version.txt not found!"
+            exit 1
+          fi
+          PR_VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "pr_version=$PR_VERSION" >> $GITHUB_OUTPUT
+          echo "PR version: $PR_VERSION"
+
+      - name: Get version from main branch
+        id: main_version
+        run: |
+          git fetch origin main
+          git checkout origin/main
+          if [ ! -f version.txt ]; then
+            echo "main_version=0.0.0" >> $GITHUB_OUTPUT
+            echo "No version.txt on main, treating as 0.0.0"
+          else
+            MAIN_VERSION=$(cat version.txt | tr -d '[:space:]')
+            echo "main_version=$MAIN_VERSION" >> $GITHUB_OUTPUT
+            echo "Main version: $MAIN_VERSION"
+          fi
+
+      - name: Compare versions
+        id: compare
+        run: |
+          PR_VERSION="${{ steps.pr_version.outputs.pr_version }}"
+          MAIN_VERSION="${{ steps.main_version.outputs.main_version }}"
+
+          # Function to compare semantic versions
+          version_gt() {
+            test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1"
+          }
+
+          if [ "$PR_VERSION" == "$MAIN_VERSION" ]; then
+            echo "result=unchanged" >> $GITHUB_OUTPUT
+            echo "❌ Version unchanged: $PR_VERSION"
+            exit 1
+          elif version_gt "$PR_VERSION" "$MAIN_VERSION"; then
+            echo "result=incremented" >> $GITHUB_OUTPUT
+            echo "✅ Version incremented: $MAIN_VERSION → $PR_VERSION"
+          else
+            echo "result=decreased" >> $GITHUB_OUTPUT
+            echo "❌ Version decreased: $MAIN_VERSION → $PR_VERSION"
+            exit 1
+          fi
+

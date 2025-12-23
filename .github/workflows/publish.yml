@@ -5,21 +5,29 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    types:
-      - closed
-    branches:
-      - main
 
 jobs:
   publish-docker-image:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     permissions:
       packages: write
       contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Read version from version.txt
+        id: version
+        run: |
+          if [ ! -f version.txt ]; then
+            echo "❌ version.txt not found!"
+            exit 1
+          fi
+          VERSION=$(cat version.txt | tr -d '[:space:]')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,6 +45,7 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
           tags: |
+            type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
             type=sha,prefix=,format=long
             type=raw,value=${{ github.ref_name }}
             type=raw,value=latest,enable=${{ github.ref_name == 'main' }}
@@ -44,6 +53,7 @@ jobs:
             org.opencontainers.image.source=${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -68,6 +78,7 @@ jobs:
       #          run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
   sbom:
+    needs: [publish-docker-image]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -86,11 +97,64 @@ jobs:
 
       - name: Generate SBOM
         run: |
-          cdxgen -r -o sbom.json .
+          VERSION="${{ needs.publish-docker-image.outputs.version }}"
+          cdxgen -r -o sbom-${VERSION}.json .
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v6
         with:
           name: sbom
-          path: sbom.json
+          path: sbom-${{ needs.publish-docker-image.outputs.version }}.json
           retention-days: 90
+
+  release:
+    needs: [publish-docker-image, sbom]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Download SBOM
+        uses: actions/download-artifact@v6
+        with:
+          name: sbom-${{ needs.publish-docker-image.outputs.version }}.json
+
+      - name: Check if tag already exists
+        run: |
+          NEW_TAG="v${{ needs.publish-docker-image.outputs.version }}"
+          git fetch --tags
+          if git tag -l "$NEW_TAG" | grep -q .; then
+            echo "❌ Tag $NEW_TAG already exists!"
+            echo "This means version.txt was not properly incremented."
+            echo "Please update version.txt to a new version number."
+            exit 1
+          else
+            echo "✅ Tag $NEW_TAG is new, proceeding with release"
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag v${{ needs.publish-docker-image.outputs.version }}
+          git push origin v${{ needs.publish-docker-image.outputs.version }}
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.publish-docker-image.outputs.version }}
+          files: sbom-${{ needs.publish-docker-image.outputs.version }}.json
+          generate_release_notes: true
+          body: |
+            ## Docker Image
+            ```
+            docker pull ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ needs.publish-docker-image.outputs.version }}
+            docker pull ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+            ```
+
+            ## Artifacts
+            - SBOM (Software Bill of Materials) attached below: `sbom-${{ needs.publish-docker-image.outputs.version }}.json`
