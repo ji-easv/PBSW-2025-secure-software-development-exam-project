@@ -71,10 +71,11 @@ jobs:
       - name: Generate SBOM
         run: |
           docker run --rm \
+            --user $(id -u):$(id -g) \
             -v ${{ github.workspace }}:/app:rw \
             -v /tmp:/tmp \
             ghcr.io/cyclonedx/cdxgen:latest \
-            -r -t csharp,js -o /app/sbom.json /app
+            -r -t csharp,js -o /app/sbom.json --no-install /app
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v6
