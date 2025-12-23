@@ -121,7 +121,7 @@ jobs:
       - name: Download SBOM
         uses: actions/download-artifact@v6
         with:
-          name: sbom-${{ needs.publish-docker-image.outputs.version }}.json
+          name: sbom-${{ needs.publish-docker-image.outputs.version }}
 
       - name: Check if tag already exists
         run: |
