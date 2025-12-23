@@ -35,40 +35,39 @@ jobs:
       contents: read # for actions/checkout to fetch code
       security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
     steps:
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        
+        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
+        # Use || true to not fail the pipeline
+      - name: Snyk Code test
+        run: snyk code test --sarif > snyk-code.sarif # || true
+        
+        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
+      - name: Snyk Open Source monitor
+        run: snyk monitor --all-projects
 
-        - name: Checkout repository
-          uses: actions/checkout@v6
-          
-          # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
-          # Use || true to not fail the pipeline
-        - name: Snyk Code test
-          run: snyk code test --sarif > snyk-code.sarif # || true
-          
-          # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
-        - name: Snyk Open Source monitor
-          run: snyk monitor --all-projects
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-        - name: Set up Docker Buildx
-          uses: docker/setup-buildx-action@v3
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: SSD-Exam-Project/Dockerfile
+          push: false
+          tags: test-image:latest
 
-        - name: Build Docker image
-          uses: docker/build-push-action@v6
-          with:
-            context: .
-            file: SSD-Exam-Project/Dockerfile
-            push: false
-            tags: test-image:latest
+      - name: Snyk Container monitor
+        run: snyk container monitor test-image:latest --file=SSD-Exam-Project/Dockerfile
 
-        - name: Snyk Container monitor
-          run: snyk container monitor test-image:latest --file=SSD-Exam-Project/Dockerfile
-
-        - name: Upload result to GitHub Code Scanning
-          uses: github/codeql-action/upload-sarif@v3
-          with:
-            sarif_file: snyk-code.sarif
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: snyk-code.sarif
   
   scan-dependencies:
     if: github.event_name == 'pull_request'
