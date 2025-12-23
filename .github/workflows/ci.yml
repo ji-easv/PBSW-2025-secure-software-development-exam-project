@@ -54,7 +54,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:{{ github.sha }}
+      IMAGE_NAME: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ github.sha }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
