@@ -17,7 +17,6 @@ jobs:
     permissions:
       packages: write
       contents: write
-      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -68,14 +67,26 @@ jobs:
       #          # against the sigstore community Fulcio instance.
       #          run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
+  sbom:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24.x"
+
+      - name: Install cdxgen
+        run: npm install -g @cyclonedx/cdxgen
+
       - name: Generate SBOM
         run: |
-          docker run --rm \
-            --user $(id -u):$(id -g) \
-            -v ${{ github.workspace }}:/app:rw \
-            -v /tmp:/tmp \
-            ghcr.io/cyclonedx/cdxgen:latest \
-            -r -t csharp,js -o /app/sbom.json --no-install /app
+          cdxgen -r -t ts,dotnet -o sbom.json .
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v6
