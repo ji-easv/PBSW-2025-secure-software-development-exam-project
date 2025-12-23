@@ -1,4 +1,4 @@
-name: Continuous Integration
+name: Build, Test, and Scan
 
 on:
   workflow_dispatch:
@@ -22,13 +22,14 @@ jobs:
           dotnet-version: 10.0.x
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore --locked-mode
 
       - name: Build
         run: dotnet build --no-restore
 
       - name: Test
         run: dotnet test --no-build --verbosity normal
+  
   
   scan-dependencies:
     if: github.event_name == 'pull_request'
@@ -45,3 +46,61 @@ jobs:
         with:
           fail-on-severity: moderate
           comment-summary-in-pr: always
+  
+  snyk:
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+    runs-on: ubuntu-latest
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore --locked-mode
+
+      - name: Set up Snyk CLI to check for security issues
+        uses: snyk/actions/setup@master
+        
+        # Runs Snyk Code (SAST) analysis and uploads result into GitHub.
+        # Use || true to not fail the pipeline
+      - name: Snyk Code test
+        run: snyk code test --sarif > snyk-code.sarif # || true
+        
+        # Runs Snyk Open Source (SCA) analysis and uploads result to Snyk.
+      - name: Snyk Open Source monitor
+        run: snyk monitor --all-projects
+        working-directory: SSD-Exam-Project
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Lowercase Image Name
+        run: |
+          REPO_OWNER="${{ github.repository_owner }}"
+          REPO_NAME="${{ github.event.repository.name }}"
+          echo "IMAGE_NAME=ghcr.io/${REPO_OWNER@L}/${REPO_NAME@L}:${{ github.sha }}" >> "${GITHUB_ENV}"
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: SSD-Exam-Project/Dockerfile
+          push: false
+          load: true
+          tags: ${{ env.IMAGE_NAME }}
+
+      - name: Snyk Container monitor
+        run: snyk container monitor ${{ env.IMAGE_NAME }} --file=SSD-Exam-Project/Dockerfile
+
+      - name: Upload result to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: snyk-code.sarif
