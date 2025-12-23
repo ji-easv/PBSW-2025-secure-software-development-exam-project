@@ -52,6 +52,7 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+        working-directory: ./frontend
 
       - name: Set up Snyk CLI to check for security issues
         uses: snyk/actions/setup@master
