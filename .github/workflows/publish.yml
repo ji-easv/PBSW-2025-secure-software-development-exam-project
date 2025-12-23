@@ -17,6 +17,7 @@ jobs:
     permissions:
       packages: write
       contents: write
+      actions: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -56,13 +57,28 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
-          
-#      - name: Sign the published Docker image
-#          if: ${{ github.event_name != 'pull_request' }}
-#          env:
-#            # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
-#            TAGS: ${{ steps.meta.outputs.tags }}
-#            DIGEST: ${{ steps.build-and-push.outputs.digest }}
-#          # This step uses the identity token to provision an ephemeral certificate
-#          # against the sigstore community Fulcio instance.
-#          run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+      #      - name: Sign the published Docker image
+      #          if: ${{ github.event_name != 'pull_request' }}
+      #          env:
+      #            # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+      #            TAGS: ${{ steps.meta.outputs.tags }}
+      #            DIGEST: ${{ steps.build-and-push.outputs.digest }}
+      #          # This step uses the identity token to provision an ephemeral certificate
+      #          # against the sigstore community Fulcio instance.
+      #          run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
+
+      - name: Generate SBOM
+        run: |
+          docker run --rm \
+            -v ${{ github.workspace }}:/app:rw \
+            -v /tmp:/tmp \
+            ghcr.io/cyclonedx/cdxgen:latest \
+            -r -t csharp,js -o /app/sbom.json /app
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v6
+        with:
+          name: sbom
+          path: sbom.json
+          retention-days: 90
