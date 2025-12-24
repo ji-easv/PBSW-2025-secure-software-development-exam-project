@@ -40,11 +40,16 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase Image Name
+        run: |
+          REPOSITORY="${{ github.repository }}"
+          echo "IMAGE_NAME=ghcr.io/${REPOSITORY@L}" >> "${GITHUB_ENV}"
+
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
             type=sha,prefix=,format=long
@@ -83,7 +88,7 @@ jobs:
           done
           cosign sign --yes ${images}
           cosign verify ${images} \
-          --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/publish.yml@refs/heads/${{ github.ref_name }} \
+          --certificate-identity=https://github.com/${{ env.REPOSITORY }}/.github/workflows/publish.yml@refs/heads/${{ github.ref_name }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   sbom:
@@ -165,13 +170,13 @@ jobs:
 
             **Pull the image:**
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.publish-docker-image.outputs.version }}
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ghcr.io/${{ env.REPOSITORY }}:${{ needs.publish-docker-image.outputs.version }}
+            docker pull ghcr.io/${{ env.REPOSITORY }}:latest
             ```
 
             **Verify signature with Cosign:**
             ```bash
-            cosign verify ghcr.io/${{ github.repository }}:${{ needs.publish-docker-image.outputs.version }} \
+            cosign verify ghcr.io/${{ env.REPOSITORY }}:${{ needs.publish-docker-image.outputs.version }} \
               --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/publish.yml@refs/heads/main \
               --certificate-oidc-issuer=https://token.actions.githubusercontent.com
             ```
