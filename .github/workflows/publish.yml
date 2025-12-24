@@ -83,7 +83,7 @@ jobs:
           done
           cosign sign --yes ${images}
           cosign verify ${images} \
-          --certificate-identity=https://github.com/${{ github.repository_owner }}/${{ github.event.repository.name }}/.github/workflows/${{ github.workflow }}@refs/heads/${{ github.ref_name }} \
+          --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/publish.yml@refs/heads/${{ github.ref_name }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
   sbom:
