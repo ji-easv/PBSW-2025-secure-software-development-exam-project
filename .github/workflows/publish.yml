@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.version.outputs.version }}
+      image_name: ${{ steps.image_name.outputs.lowercase }}
     permissions:
       packages: write
       contents: write
@@ -40,11 +41,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Lowercase Image Name
+        id: image_name
+        run: |
+          REPOSITORY="${{ github.repository }}"
+          echo "IMAGE_NAME=ghcr.io/${REPOSITORY@L}" >> "${GITHUB_ENV}"
+          echo "lowercase=ghcr.io/${REPOSITORY@L}" >> "${GITHUB_OUTPUT}"
+
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}
+          images: ${{ steps.image_name.outputs.lowercase }}
           tags: |
             type=semver,pattern={{version}},value=${{ steps.version.outputs.version }}
             type=sha,prefix=,format=long
@@ -165,13 +173,13 @@ jobs:
 
             **Pull the image:**
             ```bash
-            docker pull ghcr.io/${{ github.repository }}:${{ needs.publish-docker-image.outputs.version }}
-            docker pull ghcr.io/${{ github.repository }}:latest
+            docker pull ${{ needs.publish-docker-image.outputs.image_name }}:${{ needs.publish-docker-image.outputs.version }}
+            docker pull ${{ needs.publish-docker-image.outputs.image_name }}:latest
             ```
 
             **Verify signature with Cosign:**
             ```bash
-            cosign verify ghcr.io/${{ github.repository }}:${{ needs.publish-docker-image.outputs.version }} \
+            cosign verify ${{ needs.publish-docker-image.outputs.image_name }}:${{ needs.publish-docker-image.outputs.version }} \
               --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/publish.yml@refs/heads/main \
               --certificate-oidc-issuer=https://token.actions.githubusercontent.com
             ```

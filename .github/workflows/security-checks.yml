@@ -71,9 +71,8 @@ jobs:
 
       - name: Lowercase Image Name
         run: |
-          REPO_OWNER="${{ github.repository_owner }}"
-          REPO_NAME="${{ github.event.repository.name }}"
-          echo "IMAGE_NAME=ghcr.io/${REPO_OWNER@L}/${REPO_NAME@L}:${{ github.sha }}" >> "${GITHUB_ENV}"
+          REPOSITORY="${{ github.repository }}"
+          echo "IMAGE_NAME=ghcr.io/${REPOSITORY@L}:${{ github.sha }}" >> "${GITHUB_ENV}"
 
       - name: Build Docker image
         uses: docker/build-push-action@v6
