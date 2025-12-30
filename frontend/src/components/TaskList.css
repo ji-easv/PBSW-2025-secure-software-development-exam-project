@@ -1,0 +1,107 @@
+
+.task-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.task-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  background: var(--task-bg, #fff);
+  color: var(--task-fg, #222);
+  transition: background 0.2s, color 0.2s;
+}
+
+.task-item.completed {
+  background: var(--task-completed-bg, #e0ffe0);
+  color: var(--task-completed-fg, #222);
+  text-decoration: line-through;
+}
+
+.task-main {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.task-info {
+  margin-left: 12px;
+  text-align: left;
+}
+
+.task-title {
+  font-weight: bold;
+  font-size: 1.1em;
+  color: inherit;
+}
+
+.task-desc {
+  display: block;
+  font-size: 0.95em;
+  color: var(--task-desc-fg, #666);
+}
+
+.task-actions button {
+  margin-left: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f9f9f9;
+  color: #222;
+  padding: 0.4em 0.8em;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+@media (prefers-color-scheme: dark) {
+  .task-actions button {
+    background: #333;
+    color: #f5f5f5;
+    border: 1px solid #555;
+  }
+}
+
+.task-actions button.delete {
+  color: #fff;
+  background: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.task-actions button.delete:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+}
+
+@media (prefers-color-scheme: dark) {
+  .task-item {
+    --task-bg: #23272f;
+    --task-fg: #f5f5f5;
+  }
+  .task-item.completed {
+    --task-completed-bg: #2e4d2e;
+    --task-completed-fg: #b6ffb6;
+  }
+  .task-desc {
+    --task-desc-fg: #aaa;
+  }
+}
+@media (prefers-color-scheme: light) {
+  .task-item {
+    --task-bg: #fff;
+    --task-fg: #222;
+  }
+  .task-item.completed {
+    --task-completed-bg: #e0ffe0;
+    --task-completed-fg: #222;
+  }
+  .task-desc {
+    --task-desc-fg: #666;
+  }
+}
+
+

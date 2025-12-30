@@ -1,0 +1,29 @@
+.task-form {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  align-items: flex-end;
+}
+
+.task-form input[type="text"] {
+  padding: 0.5em 1em;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 1em;
+  flex: 1;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+button.cancel {
+  background: #eee;
+  color: #333;
+  border: 1px solid #bbb;
+}
+
+button.cancel:hover {
+  background: #ddd;
+}
