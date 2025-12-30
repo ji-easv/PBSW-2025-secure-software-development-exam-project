@@ -79,7 +79,6 @@ function App() {
 
   // Delete task
   const handleDelete = async (id: string) => {
-    eval("console.log('Hello from the other side)"); // Debug log
     setError(null);
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });

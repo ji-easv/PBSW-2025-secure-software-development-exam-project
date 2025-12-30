@@ -26,7 +26,6 @@ builder.Services.AddCors(options =>
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-    Console.WriteLine("Using connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 
 builder.Services.AddScoped<ITaskItemRepository, TaskItemRepository>();
