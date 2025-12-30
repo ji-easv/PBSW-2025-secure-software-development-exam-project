@@ -12,6 +12,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       image_name: ${{ steps.image_name.outputs.lowercase }}
+      digest: ${{ steps.build-and-push.outputs.digest }}
     permissions:
       packages: write
       contents: write
@@ -76,6 +77,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
+          sbom: true
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
@@ -94,13 +96,19 @@ jobs:
           --certificate-identity=https://github.com/${{ github.repository }}/.github/workflows/publish.yml@refs/heads/${{ github.ref_name }} \
           --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
-      - name: SLSA Generation
-        uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
-        with:
-          image: ${{ steps.image_name.outputs.lowercase }}:${{ steps.version.outputs.version }}
-          digest: ${{ steps.build-and-push.outputs.digest }}
-          registry-username: ${{ github.actor }}
-          registry-password: ${{ secrets.GITHUB_TOKEN }}
+  provenance:
+    needs: [publish-docker-image]
+    permissions:
+      actions: read # for detecting the Github Actions environment.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for uploading attestations.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ${{ needs.publish-docker-image.outputs.image }}:${{ needs.publish-docker-image.outputs.version }}
+      digest: ${{ needs.publish-docker-image.outputs.digest }}
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
 
   sbom:
     needs: [publish-docker-image]
