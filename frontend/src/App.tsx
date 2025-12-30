@@ -1,9 +1,12 @@
-
 import { useEffect, useState } from "react";
 import "./App.css";
-import TaskList from "./components/TaskList";
 import TaskForm from "./components/TaskForm";
-import type { CreateTaskItemDto, GetTaskItemDto, UpdateTaskItemDto } from "./domain/dto";
+import TaskList from "./components/TaskList";
+import type {
+  CreateTaskItemDto,
+  GetTaskItemDto,
+  UpdateTaskItemDto,
+} from "./domain/dto";
 
 const API_URL = "http://localhost:5021/api/v1/tasks";
 
@@ -76,6 +79,7 @@ function App() {
 
   // Delete task
   const handleDelete = async (id: string) => {
+    eval("console.log('Hello from the other side)"); // Debug log
     setError(null);
     try {
       const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
@@ -93,7 +97,7 @@ function App() {
       {error && <div style={{ color: "red", marginBottom: 12 }}>{error}</div>}
       <TaskForm
         value={editTask ?? newTask}
-        onChange={val => {
+        onChange={(val) => {
           if (editTask) {
             setEditTask(val as UpdateTaskItemDto);
           } else {
@@ -109,28 +113,30 @@ function App() {
       ) : (
         <TaskList
           tasks={tasks}
-          onEdit={task => setEditTask({
-            id: task.id,
-            title: task.title,
-            description: task.description ?? '',
-            isCompleted: !!task.isCompleted,
-          })}
+          onEdit={(task) =>
+            setEditTask({
+              id: task.id,
+              title: task.title,
+              description: task.description ?? "",
+              isCompleted: !!task.isCompleted,
+            })
+          }
           onDelete={handleDelete}
-          onToggleComplete={async task => {
+          onToggleComplete={async (task) => {
             setError(null);
             try {
               const updated = {
                 id: task.id,
                 title: task.title,
-                description: task.description ?? '',
+                description: task.description ?? "",
                 isCompleted: !task.isCompleted,
               };
               const res = await fetch(API_URL, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updated),
               });
-              if (!res.ok) throw new Error('Failed to update task');
+              if (!res.ok) throw new Error("Failed to update task");
               fetchTasks();
             } catch (e: any) {
               setError(e.message);
