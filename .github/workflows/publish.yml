@@ -104,9 +104,10 @@ jobs:
       packages: write # for uploading attestations.
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
-      image: ${{ needs.publish-docker-image.outputs.image }}:${{ needs.publish-docker-image.outputs.version }}
+      image: ${{ needs.publish-docker-image.outputs.image_name }}:${{ needs.publish-docker-image.outputs.version }}
       digest: ${{ needs.publish-docker-image.outputs.digest }}
       registry-username: ${{ github.actor }}
+
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -141,7 +142,7 @@ jobs:
           retention-days: 90
 
   release:
-    needs: [publish-docker-image, sbom]
+    needs: [publish-docker-image, sbom, provenance]
     runs-on: ubuntu-latest
     permissions:
       contents: write
