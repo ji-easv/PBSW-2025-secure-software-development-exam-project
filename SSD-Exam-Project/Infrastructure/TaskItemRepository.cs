@@ -34,18 +34,4 @@ public class TaskItemRepository(AppDbContext dbContext) : ITaskItemRepository
     {
         return await dbContext.TaskItems.ToListAsync();
     }
-
-    // TODO: remvove after test
-     public async Task<List<TaskItem>> SearchByTitle(string searchTerm)
-    {
-        var query = "SELECT * FROM TaskItems WHERE Title LIKE '%" + searchTerm + "%'";
-        return await dbContext.TaskItems.FromSqlRaw(query).ToListAsync();
-    }
-
-    public void ConnectToExternalService()
-    {
-        var apiKey = "sk-1234567890abcdef";
-        var password = "MyPassword123!";
-        Console.WriteLine($"Connecting to external service with API Key: {apiKey    } and Password: {password}");
-    }
 }
