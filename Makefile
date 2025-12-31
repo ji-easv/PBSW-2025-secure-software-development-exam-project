@@ -1,4 +1,4 @@
-.PHONY: verify verify-slsa test
+.PHONY: verify verify-slsa
 
 verify:
 	cosign verify ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest \
@@ -6,13 +6,10 @@ verify:
   --certificate-oidc-issuer=https://token.actions.githubusercontent.com
 
 verify-slsa:
-	cosign verify-attestation ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest \
-	--type slsaprovenance \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity-regexp '^https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v[0-9]+.[0-9]+.[0-9]+$$'
-
-test:
-	cosign verify-attestation ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest \
-	--type slsaprovenance \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --certificate-identity=https://github.com/ji-easv/PBSW-2025-secure-software-development-exam-project/.github/workflows/publish.yml@refs/heads/main \
+	@docker pull ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest > /dev/null 2>&1 && \
+	DIGEST=$$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest | cut -d'@' -f2) && \
+	echo "Verifying SLSA provenance for digest: $$DIGEST" && \
+	slsa-verifier verify-image ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest@$$DIGEST \
+    --source-uri github.com/ji-easv/PBSW-2025-secure-software-development-exam-project \
+    --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0 \
+    --print-provenance
