@@ -29,6 +29,14 @@ jobs:
             exit 1
           fi
           VERSION=$(cat version.txt | tr -d '[:space:]')
+          
+          # If not on main branch, append commit SHA to version
+          if [ "${{ github.ref_name }}" != "main" ]; then
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${VERSION}-${SHORT_SHA}"
+            echo "📦 Feature branch detected, using version: $VERSION"
+          fi
+          
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
@@ -77,7 +85,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
-          sbom: true
+          sbom: false # TODO
 
       - name: Install Cosign
         uses: sigstore/cosign-installer@main
