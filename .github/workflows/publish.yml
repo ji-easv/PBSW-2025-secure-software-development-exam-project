@@ -29,6 +29,14 @@ jobs:
             exit 1
           fi
           VERSION=$(cat version.txt | tr -d '[:space:]')
+
+          # If not on main branch, append commit SHA to version
+          if [ "${{ github.ref_name }}" != "main" ]; then
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${VERSION}-${SHORT_SHA}"
+            echo "📦 Feature branch detected, using version: $VERSION"
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
@@ -140,8 +148,24 @@ jobs:
           path: sbom-${{ needs.publish-docker-image.outputs.version }}.json
           retention-days: 90
 
+  verify-slsa:
+    needs: [publish-docker-image, provenance]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Install slsa-verifier
+        uses: slsa-framework/slsa-verifier/actions/installer@v2.7.1
+
+      - name: Verify SLSA provenance
+        run: |
+          slsa-verifier verify-image ${{ needs.publish-docker-image.outputs.image_name }}:${{ needs.publish-docker-image.outputs.version }}@${{ needs.publish-docker-image.outputs.digest }} \
+            --source-uri github.com/${{ github.repository }} \
+            --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0 \
+            --print-provenance
+
   release:
-    needs: [publish-docker-image, sbom, provenance]
+    needs: [publish-docker-image, sbom, provenance, verify-slsa]
     runs-on: ubuntu-latest
     permissions:
       contents: write
