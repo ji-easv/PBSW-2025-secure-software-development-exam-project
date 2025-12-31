@@ -159,8 +159,9 @@ jobs:
 
       - name: Verify SLSA provenance
         run: |
-          slsa-verifier verify-image ${{ needs.publish-docker-image.outputs.image_name }}@${{ needs.publish-docker-image.outputs.digest }} \
+          slsa-verifier verify-image ${{ needs.publish-docker-image.outputs.image_name }}:${{ needs.publish-docker-image.outputs.version }}@${{ needs.publish-docker-image.outputs.digest }} \
             --source-uri github.com/${{ github.repository }} \
+            --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.7.1 \
             --print-provenance
 
   release:
