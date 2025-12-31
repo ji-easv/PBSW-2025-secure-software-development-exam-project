@@ -107,7 +107,6 @@ jobs:
       image: ${{ needs.publish-docker-image.outputs.image_name }}
       digest: ${{ needs.publish-docker-image.outputs.digest }}
       registry-username: ${{ github.actor }}
-
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}
 
