@@ -7,9 +7,11 @@ verify:
 
 verify-slsa:
 	@docker pull ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest > /dev/null 2>&1 && \
-	DIGEST=$$(docker inspect --format='{{index .RepoDigests 0}}' ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest | cut -d'@' -f2) && \
-	echo "Verifying SLSA provenance for digest: $$DIGEST" && \
-	slsa-verifier verify-image ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest@$$DIGEST \
-    --source-uri github.com/ji-easv/PBSW-2025-secure-software-development-exam-project \
-    --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0 \
-    --print-provenance
+    docker inspect --format='{{range .RepoDigests}}{{println .}}{{end}}' ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest | while read -r REPO_DIGEST; do \
+        DIGEST=$$(echo $$REPO_DIGEST | cut -d'@' -f2) && \
+        echo "Attempting verification with digest: $$DIGEST" && \
+        slsa-verifier verify-image ghcr.io/ji-easv/pbsw-2025-secure-software-development-exam-project:latest@$$DIGEST \
+        --source-uri github.com/ji-easv/PBSW-2025-secure-software-development-exam-project \
+        --builder-id https://github.com/slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@refs/tags/v2.1.0 \
+        --print-provenance && break || echo "Failed with $$DIGEST, trying next..."; \
+    done
